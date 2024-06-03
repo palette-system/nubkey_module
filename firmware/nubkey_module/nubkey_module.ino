@@ -273,7 +273,7 @@ void requestEvent() {
     Wire.write(get_cmd);
 
   } else if (get_cmd == 0x47) {
-    // Nubkey 読み込みサイクルのdelay値を変更してEEPROMに保存
+    // Nubkey 動かし始める高さを変更してEEPROMに保存
     c = nubst.nub_start_down;
     nubst.nub_start_down = (get_data[1] << 8) | get_data[2];
     // 変更があればEEPROMに保存
@@ -437,7 +437,7 @@ void loop() {
           // Nubkey開始時間より長く押されていたらマウス移動
           mx = nub_x - nubst.rang_x; // キャリブレーションの位置を反映
           my = nub_y - nubst.rang_y; // キャリブレーションの位置を反映
-          p = (360 - nub_down);
+          p = (nubst.nub_start_down - nub_down);
           if (t > (unsigned long)nubst.nub_start_time) {
             if (mx < 0) {
               res_data[0] = (int)(abs(mx) * p / nubst.nub_speed_left) & 0xFF;
