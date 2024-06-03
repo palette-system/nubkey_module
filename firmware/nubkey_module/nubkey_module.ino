@@ -16,14 +16,21 @@
 // 受け取るデータのバッファサイズ
 #define GET_DATA_MAX_LENGTH  24
 
+// Nubkey速度デフォルト
+#define NUB_SPEED_X_DEFAULT  4000
+#define NUB_SPEED_Y_DEFAULT  3000
+
 // EEPROM に保存しているNubkey用の設定
 struct nub_setting {
     uint8_t i2c_addr; // 自分のI2Cアドレス
+    uint8_t nubkey_off_status; // Nubkey_offにするかどうか(0=Nubkey OFF / 1=Nubkey ON / 2=ピンの情報優先)
     short key_actuation; // Nubkey_off時のアクチュエーションポイント
     short nub_start_time; // Nubkeyとしてマウス操作させるまでの時間(ミリ秒)
     short nub_start_down; // Nubkey マウス移動開始させるアクチュエーションポイント
-    short nub_speed_x; // Nubkey マウス移動させる速度 X
-    short nub_speed_y; // Nubkey マウス移動させる速度 Y
+    short nub_speed_left; // Nubkey マウス移動させる速度 X
+    short nub_speed_right; // Nubkey マウス移動させる速度 X
+    short nub_speed_up; // Nubkey マウス移動させる速度 Y
+    short nub_speed_down; // Nubkey マウス移動させる速度 Y
     short rang_x; // キャリブレーション中心の X 座標
     short rang_y; // キャリブレーション中心の Y 座標
     short loop_delay; // 読み込みサイクルのdelay値(ミリ秒)
@@ -87,19 +94,22 @@ void setup() {
 
     // Nubkeyの設定初期値
     nubst.i2c_addr = 0; // 自分のアドレス 0 が設定されている場合はI2Cのアドレスはデフォルトの0x0A(ピンの設定によっては 0x0B)になる
+    nubst.nubkey_off_status = 2; // Nubkey_offにするかどうか(0=Nubkey OFF / 1=Nubkey ON / 2=ピンの情報優先)
     nubst.key_actuation = 280; // キーをONとする閾値(Nubkey OFF モードの時に使われる)
     nubst.nub_start_time = 200; // Nubkeyとしてマウス操作させるまでの時間(ミリ秒)
     nubst.nub_start_down = 360; // Nubkeyとしてマウス操作開始させるアクチュエーションポイント
-    nubst.nub_speed_x = 4000; // Nubkey マウス移動のスピード X（数値が低い方が早い）
-    nubst.nub_speed_y = 3000; // Nubkey マウス移動のスピード Y (Y軸のがブレ幅が少ないのでY軸の方が早く動くようにする)
+    nubst.nub_speed_left = NUB_SPEED_X_DEFAULT; // Nubkey マウス移動のスピード X（数値が低い方が早い）
+    nubst.nub_speed_right = NUB_SPEED_X_DEFAULT; // Nubkey マウス移動のスピード X（数値が低い方が早い）
+    nubst.nub_speed_up = NUB_SPEED_Y_DEFAULT; // Nubkey マウス移動のスピード Y (Y軸のがブレ幅が少ないのでY軸の方が早く動くようにする)
+    nubst.nub_speed_down = NUB_SPEED_Y_DEFAULT; // Nubkey マウス移動のスピード Y (Y軸のがブレ幅が少ないのでY軸の方が早く動くようにする)
     nubst.rang_x = 0; // キャリブレーション X 座標
     nubst.rang_y = 0; // キャリブレーション Y 座標
     nubst.loop_delay = 2; // 読み込みサイクルのdelay(ミリ秒)
 
     // 初めての起動の場合EPPROMにデフォルト設定を書き込む
     c = EEPROM.read(0); // 最初の0バイト目を読み込む
-    if (c != 0x36) {
-      EEPROM.write(0, 0x36); // 初期化したよを書き込む
+    if (c != 0x39) {
+      EEPROM.write(0, 0x39); // 初期化したよを書き込む
       EEPROM.put(1, nubst); // 初期値を書き込んでおく
     }
 
@@ -165,7 +175,7 @@ void receiveEvent(int data_len) {
 
 // I2Cデータ要求を受け取った時の処理
 void requestEvent() {
-  short c, d;
+  short c, d, e, f;
   if (get_cmd == 0x00) {
     // コマンド 0x00 を受け取った場合は自分のアドレスをエコー
     Wire.write(i2c_addr);
@@ -184,16 +194,21 @@ void requestEvent() {
     // 設定情報取得コマンドを受け取った場合は設定情報を返す
     Wire.write(get_cmd); // コマンドをエコー
     Wire.write(nubst.i2c_addr & 0xFF);
+    Wire.write(nubst.nubkey_off_status & 0xFF);
     Wire.write((nubst.key_actuation >> 8) & 0xFF);
     Wire.write(nubst.key_actuation & 0xFF);
     Wire.write((nubst.nub_start_time >> 8) & 0xFF);
     Wire.write(nubst.nub_start_time & 0xFF);
     Wire.write((nubst.nub_start_down >> 8) & 0xFF);
     Wire.write(nubst.nub_start_down & 0xFF);
-    Wire.write((nubst.nub_speed_x >> 8) & 0xFF);
-    Wire.write(nubst.nub_speed_x & 0xFF);
-    Wire.write((nubst.nub_speed_y >> 8) & 0xFF);
-    Wire.write(nubst.nub_speed_y & 0xFF);
+    Wire.write((nubst.nub_speed_left >> 8) & 0xFF);
+    Wire.write(nubst.nub_speed_left & 0xFF);
+    Wire.write((nubst.nub_speed_right >> 8) & 0xFF);
+    Wire.write(nubst.nub_speed_right & 0xFF);
+    Wire.write((nubst.nub_speed_up >> 8) & 0xFF);
+    Wire.write(nubst.nub_speed_up & 0xFF);
+    Wire.write((nubst.nub_speed_down >> 8) & 0xFF);
+    Wire.write(nubst.nub_speed_down & 0xFF);
     Wire.write((nubst.rang_x >> 8) & 0xFF);
     Wire.write(nubst.rang_x & 0xFF);
     Wire.write((nubst.rang_y >> 8) & 0xFF);
@@ -202,6 +217,16 @@ void requestEvent() {
     Wire.write(nubst.loop_delay & 0xFF);
 
   } else if (get_cmd == 0x42) {
+    // Nubkey OFFモードの設定を更新してEEPROMに保存
+    c = nubst.nubkey_off_status;
+    nubst.nubkey_off_status = get_data[1];
+    // 変更があればEEPROMに保存
+    if (c != nubst.nubkey_off_status) EEPROM.put(1, nubst);
+    EEPROM.put(1, nubst);
+    // コマンドをエコー
+    Wire.write(get_cmd);
+
+  } else if (get_cmd == 0x43) {
     // アクチュエーションポイント設定を更新してEEPROMに保存
     c = nubst.key_actuation;
     nubst.key_actuation = (get_data[1] << 8) | get_data[2];
@@ -211,7 +236,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x43) {
+  } else if (get_cmd == 0x44) {
     // Nubkeyとしてマウス操作させるまでの時間を更新してEEPROMに保存
     c = nubst.nub_start_time;
     nubst.nub_start_time = (get_data[1] << 8) | get_data[2];
@@ -220,18 +245,25 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x44) {
+  } else if (get_cmd == 0x45) {
     // Nubkey マウス移動のスピードを更新してEEPROMに保存
-    c = nubst.nub_speed_x;
-    d = nubst.nub_speed_y;
-    nubst.nub_speed_x = (get_data[1] << 8) | get_data[2];
-    nubst.nub_speed_y = (get_data[3] << 8) | get_data[4];
+    c = nubst.nub_speed_left;
+    d = nubst.nub_speed_right;
+    e = nubst.nub_speed_up;
+    f = nubst.nub_speed_down;
+    nubst.nub_speed_left = (get_data[1] << 8) | get_data[2];
+    nubst.nub_speed_right = (get_data[3] << 8) | get_data[4];
+    nubst.nub_speed_up = (get_data[5] << 8) | get_data[6];
+    nubst.nub_speed_down = (get_data[7] << 8) | get_data[8];
     // 変更があればEEPROMに保存
-    if (c != nubst.nub_speed_x || d != nubst.nub_speed_y) EEPROM.put(1, nubst);
+    if (c != nubst.nub_speed_left || 
+        d != nubst.nub_speed_right || 
+        e != nubst.nub_speed_up || 
+        f != nubst.nub_speed_down) EEPROM.put(1, nubst);
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x45) {
+  } else if (get_cmd == 0x46) {
     // Nubkey 読み込みサイクルのdelay値を変更してEEPROMに保存
     c = nubst.loop_delay;
     nubst.loop_delay = (get_data[1] << 8) | get_data[2];
@@ -240,7 +272,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x46) {
+  } else if (get_cmd == 0x47) {
     // Nubkey 読み込みサイクルのdelay値を変更してEEPROMに保存
     c = nubst.nub_start_down;
     nubst.nub_start_down = (get_data[1] << 8) | get_data[2];
@@ -249,14 +281,17 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x47) {
+  } else if (get_cmd == 0x48) {
     // 設定をすべてリセット
     nubst.i2c_addr = 0;
+    nubst.nubkey_off_status = 2;
     nubst.key_actuation = 280;
     nubst.nub_start_time = 200;
     nubst.nub_start_down = 360;
-    nubst.nub_speed_x = 4000;
-    nubst.nub_speed_y = 3000;
+    nubst.nub_speed_left = NUB_SPEED_X_DEFAULT;
+    nubst.nub_speed_right = NUB_SPEED_X_DEFAULT;
+    nubst.nub_speed_up = NUB_SPEED_Y_DEFAULT;
+    nubst.nub_speed_down = NUB_SPEED_Y_DEFAULT;
     nubst.rang_x = 0;
     nubst.rang_y = 0;
     nubst.loop_delay = 2;
@@ -307,7 +342,11 @@ void loop() {
   unsigned long t, n, p;
 
   // Nubkeyオフモードかピンの状態を取得
-  nubkey_off_mode = (bool)!digitalRead(PIN_PB3);
+  if ((nubst.nubkey_off_status == 2 && !digitalRead(PIN_PB3)) || nubst.nubkey_off_status == 1) {
+    nubkey_off_mode = true;
+  } else {
+    nubkey_off_mode = false;
+  }
 
   // アクチュエーションポイント設定モードかピンの状態を取得
   actuation_mode = (bool)!digitalRead(PIN_PB2);
@@ -401,14 +440,14 @@ void loop() {
           p = (360 - nub_down);
           if (t > (unsigned long)nubst.nub_start_time) {
             if (mx < 0) {
-              res_data[0] = (int)(abs(mx) * p / nubst.nub_speed_x) & 0xFF;
+              res_data[0] = (int)(abs(mx) * p / nubst.nub_speed_left) & 0xFF;
             } else {
-              res_data[1] = (int)(abs(mx) * p / nubst.nub_speed_x) & 0xFF;
+              res_data[1] = (int)(abs(mx) * p / nubst.nub_speed_right) & 0xFF;
             }
             if (my < 0) {
-              res_data[2] = (int)(abs(my) * p / nubst.nub_speed_y) & 0xFF;
+              res_data[2] = (int)(abs(my) * p / nubst.nub_speed_up) & 0xFF;
             } else {
-              res_data[3] = (int)(abs(my) * p / nubst.nub_speed_y) & 0xFF;
+              res_data[3] = (int)(abs(my) * p / nubst.nub_speed_down) & 0xFF;
             }
           }
         }
