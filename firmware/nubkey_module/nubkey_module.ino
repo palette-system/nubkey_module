@@ -8,6 +8,11 @@
 #include <avr/wdt.h>
 #include <avr/pgmspace.h>
 
+// nubkey_module の製品識別番号
+#define NUBKEY_SELIAL_NO  0x20
+
+// ファームウェアのバージョン
+#define NUBKEY_FIRMWARE_VAR  0x01
 
 // ATTiny424 本体のアドレス
 #define I2C_SLAVE_ADD_DEF  0x0A
@@ -27,16 +32,16 @@ struct nub_setting {
     short key_actuation; // Nubkey_off時のアクチュエーションポイント
     short nub_start_time; // Nubkeyとしてマウス操作させるまでの時間(ミリ秒)
     short nub_start_down; // Nubkey マウス移動開始させるアクチュエーションポイント
-    short nub_speed_left; // Nubkey マウス移動させる速度 X
-    short nub_speed_right; // Nubkey マウス移動させる速度 X
-    short nub_speed_up; // Nubkey マウス移動させる速度 Y
-    short nub_speed_down; // Nubkey マウス移動させる速度 Y
+    short nub_speed_left; // Nubkey マウス移動させる速度 左
+    short nub_speed_right; // Nubkey マウス移動させる速度 右
+    short nub_speed_up; // Nubkey マウス移動させる速度 上
+    short nub_speed_down; // Nubkey マウス移動させる速度 下
     short rang_x; // キャリブレーション中心の X 座標
     short rang_y; // キャリブレーション中心の Y 座標
     short loop_delay; // 読み込みサイクルのdelay値(ミリ秒)
 };
 
-// I2C の自分のアドレス
+// 現在の I2C の自分のアドレス
 uint8_t i2c_addr;
 
 // PIM447に合わせたデータフォーマットの場合(res_type = 0)
@@ -89,10 +94,8 @@ bool calibration_mode_last;
 void receiveEvent(int data_len); // データを受け取った
 void requestEvent(); // データ要求を受け取った
 
-void setup() {
-    uint8_t c;
-
-    // Nubkeyの設定初期値
+// Nubkeyの設定初期値
+void nubst_reset() {
     nubst.i2c_addr = 0; // 自分のアドレス 0 が設定されている場合はI2Cのアドレスはデフォルトの0x0A(ピンの設定によっては 0x0B)になる
     nubst.nubkey_off_status = 2; // Nubkey_offにするかどうか(0=Nubkey OFF / 1=Nubkey ON / 2=ピンの情報優先)
     nubst.key_actuation = 280; // キーをONとする閾値(Nubkey OFF モードの時に使われる)
@@ -105,6 +108,13 @@ void setup() {
     nubst.rang_x = 0; // キャリブレーション X 座標
     nubst.rang_y = 0; // キャリブレーション Y 座標
     nubst.loop_delay = 2; // 読み込みサイクルのdelay(ミリ秒)
+}
+
+void setup() {
+    uint8_t c;
+
+    // Nubkeyの設定初期値
+    nubst_reset();
 
     // 初めての起動の場合EPPROMにデフォルト設定を書き込む
     c = EEPROM.read(0); // 最初の0バイト目を読み込む
@@ -141,7 +151,7 @@ void setup() {
     memset(res_data, 0x00, 8);
     memset(get_data, 0x00, GET_DATA_MAX_LENGTH);
 
-    // レスポンスタイプ    0=PIM447互換 / 1=アナログ値取得モード / 2=
+    // レスポンスタイプ    0=PIM447互換 / 1=アナログ値取得モード
     res_type = (digitalRead(PIN_PA2))? 0: 1;
 
     // I2C のアドレス    デフォルト=0x0A / GND=0x0B
@@ -176,11 +186,8 @@ void receiveEvent(int data_len) {
 // I2Cデータ要求を受け取った時の処理
 void requestEvent() {
   short c, d, e, f;
-  if (get_cmd == 0x00) {
-    // コマンド 0x00 を受け取った場合は自分のアドレスをエコー
-    Wire.write(i2c_addr);
 
-  } else if (get_cmd == 0x40) {
+  if (get_cmd == 0x40) {
     // アドレス設定
     nubst.i2c_addr = get_data[1];
     // EEPROMに保存
@@ -246,6 +253,15 @@ void requestEvent() {
     Wire.write(get_cmd);
 
   } else if (get_cmd == 0x45) {
+    // Nubkey 動かし始める高さを変更してEEPROMに保存
+    c = nubst.nub_start_down;
+    nubst.nub_start_down = (get_data[1] << 8) | get_data[2];
+    // 変更があればEEPROMに保存
+    if (c != nubst.nub_start_down) EEPROM.put(1, nubst);
+    // コマンドをエコー
+    Wire.write(get_cmd);
+
+  } else if (get_cmd == 0x46) {
     // Nubkey マウス移動のスピードを更新してEEPROMに保存
     c = nubst.nub_speed_left;
     d = nubst.nub_speed_right;
@@ -263,7 +279,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x46) {
+  } else if (get_cmd == 0x47) {
     // Nubkey 読み込みサイクルのdelay値を変更してEEPROMに保存
     c = nubst.loop_delay;
     nubst.loop_delay = (get_data[1] << 8) | get_data[2];
@@ -272,29 +288,9 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x47) {
-    // Nubkey 動かし始める高さを変更してEEPROMに保存
-    c = nubst.nub_start_down;
-    nubst.nub_start_down = (get_data[1] << 8) | get_data[2];
-    // 変更があればEEPROMに保存
-    if (c != nubst.nub_start_down) EEPROM.put(1, nubst);
-    // コマンドをエコー
-    Wire.write(get_cmd);
-
   } else if (get_cmd == 0x48) {
     // 設定をすべてリセット
-    nubst.i2c_addr = 0;
-    nubst.nubkey_off_status = 2;
-    nubst.key_actuation = 280;
-    nubst.nub_start_time = 200;
-    nubst.nub_start_down = 360;
-    nubst.nub_speed_left = NUB_SPEED_X_DEFAULT;
-    nubst.nub_speed_right = NUB_SPEED_X_DEFAULT;
-    nubst.nub_speed_up = NUB_SPEED_Y_DEFAULT;
-    nubst.nub_speed_down = NUB_SPEED_Y_DEFAULT;
-    nubst.rang_x = 0;
-    nubst.rang_y = 0;
-    nubst.loop_delay = 2;
+    nubst_reset();
     // EEPROMに保存
     EEPROM.put(1, nubst);
     // コマンドをエコー
@@ -304,6 +300,7 @@ void requestEvent() {
 
   } else if (get_cmd == 0x50) {
     // アナログ値要求
+    Wire.write(get_cmd);
     Wire.write((nub_x >> 8) & 0xFF);
     Wire.write(nub_x & 0xFF);
     Wire.write((nub_y >> 8) & 0xFF);
@@ -313,6 +310,7 @@ void requestEvent() {
 
   } else if (get_cmd == 0x51) {
     // アナログ値要求上下左右の順番
+    Wire.write(get_cmd);
     Wire.write((au >> 8) & 0xFF);
     Wire.write(au & 0xFF);
     Wire.write((ad >> 8) & 0xFF);
@@ -321,6 +319,13 @@ void requestEvent() {
     Wire.write(al & 0xFF);
     Wire.write((ar >> 8) & 0xFF);
     Wire.write(ar & 0xFF);
+
+  } else if (get_cmd == 0x60) {
+    // コマンド 0x60 を受け取った場合は自分のアドレスと nubkey_module と判定するための番号を返す
+    Wire.write(get_cmd);
+    Wire.write(i2c_addr);
+    Wire.write(NUBKEY_SELIAL_NO);
+    Wire.write(NUBKEY_FIRMWARE_VAR);
 
   } else if (res_type == 1) {
     // アナログ値を返す short X / short Y / short 押し込み の6byte
@@ -376,7 +381,7 @@ void loop() {
     EEPROM.put(1, nubst);
 
   } else if (calibration_mode) {
-    // キャリブレーション設定モード
+    // キャリブレーション設定モード 開始時
     if (calibration_mode_last == false) {
       // キャリブレーション設定開始時に値をリセット
       nub_x_min = nub_x_max = nub_y_min = nub_y_max = 0;
@@ -391,7 +396,7 @@ void loop() {
   } else if (!calibration_mode && calibration_mode_last) {
     // キャリブレーション設定モード 終了時
     calibration_mode_last = false;
-    // ふり幅が60以上の場合のみ設定変更(40以下は触られていないとする)
+    // ふり幅が40以上の場合のみ設定変更(40以下は触られていないとする)
     mx = nub_x_max - nub_x_min;
     my = nub_y_max - nub_y_min;
     if (mx > 40 && my > 40) {
@@ -435,10 +440,10 @@ void loop() {
           // どれくらい押されていたか計算
           t = n - key_down_start;
           // Nubkey開始時間より長く押されていたらマウス移動
-          mx = nub_x - nubst.rang_x; // キャリブレーションの位置を反映
-          my = nub_y - nubst.rang_y; // キャリブレーションの位置を反映
-          p = (nubst.nub_start_down - nub_down);
           if (t > (unsigned long)nubst.nub_start_time) {
+            mx = nub_x - nubst.rang_x; // キャリブレーションの位置を反映
+            my = nub_y - nubst.rang_y; // キャリブレーションの位置を反映
+            p = (nubst.nub_start_down - nub_down); // 押し込み具合取得
             if (mx < 0) {
               res_data[0] = (int)(abs(mx) * p / nubst.nub_speed_left) & 0xFF;
             } else {
@@ -461,7 +466,6 @@ void loop() {
 
       }
     }
-
   }
 
   delay(nubst.loop_delay);
