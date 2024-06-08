@@ -25,6 +25,12 @@ nubkey_moduleで実行できるI2Cのコマンドの仕様書です。QMK等か�
 <img src="/images/haisen_1.png" width="700"><br>
 <br>
 
+<img src="/images/danmen_1.png" width="700"><br>
+<br>
+
+<img src="/images/ok_2.png" width="700"><br>
+<br>
+
 ## ピンの説明
 
 |  ピン  |  説明  |
