@@ -22,9 +22,23 @@ nubkey_moduleで実行できるI2Cのコマンドの仕様書です。QMK等か�
 
 ## 基本的な接続
 <br>
-<img src="/images/haisen_1.png" width="400"><br>
+<img src="/images/haisen_1.png" width="700"><br>
 <br>
 
+## ピンの説明
+
+|  ピン  |  説明  |
+|  ----  |  :---  |
+|  UPDI  |  nubkey_module のファームを更新するためのピンです  |
+|  addr 0x0B  |  nubkey_module のI2Cアドレスを0x0Bにするピンです。<br>このピンをGNDに接続した状態で起動するとI2Cアドレスが0x0Bになります。  |
+|  raw res  |  I2CのレスポンスがデフォルトではPIM447互換ですがこのピンをGNDに接続すると「short X座標, short Y座標, short スイッチの押し込み具合」を返すようになります。  |
+|  actuation  |  アクチュエーションポイント設定ピンです。このピンをGNDに接続するとアクチュエーション設定モードに入ります。その後GNDへの接続を切断したタイミングのKS-20のスイッチの高さがアクチュエーションポイントとしてnubkey_moduleに保存されます。  |
+|  nubkey off  |  このピンをGNDに接続すると、マウス移動が無しの状態になりスイッチのON/OFFのみが変わるようになります。この時actuationピンで設定したスイッチの高さでON/OFFが切り替わります。  |
+|  GND  |  GNDです  |
+|  VCC  |  電源です。3.3Vを接続して下さい。  |
+|  SCL  |  I2C通信用（SCL）  |
+|  SDA  |  I2C通信用（SDA）  |
+|  calibration  |  キャリブレーションピンです。このピンをGNDに接続した状態でKS-20のスイッチを押してグリグリすると、Nubkeyの中心位置を調節できます。  |
 
 
 
