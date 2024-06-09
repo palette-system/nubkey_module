@@ -22,8 +22,8 @@
 #define GET_DATA_MAX_LENGTH  24
 
 // Nubkey速度デフォルト
-#define NUB_SPEED_X_DEFAULT  4000
-#define NUB_SPEED_Y_DEFAULT  3000
+#define NUB_SPEED_X_DEFAULT  800
+#define NUB_SPEED_Y_DEFAULT  600
 
 // EEPROM に保存しているNubkey用の設定
 struct nub_setting {
@@ -71,6 +71,8 @@ short nub_down; // 押し込み具合
 bool nubkey_off_mode; // Nubkey off ピン
 bool actuation_mode; // アクチュエーションポイント設定ピン
 bool calibration_mode; // キャリブレーション設定ピン
+uint8_t actuation_status; // アクチュエーションモード設定フラグ(0=アクチュエーション設定 OFF / 1=アクチュエーション設定 ON / 2=ピンの情報優先)
+uint8_t calibration_status; // キャリブレーションモード設定フラグ(0=キャリブレーション OFF / 1=キャリブレーション ON / 2=ピンの情報優先)
 
 // キャリブレーション設定用変数
 short nub_x_min; // 取得できる X 座標の最小値
@@ -118,8 +120,8 @@ void setup() {
 
     // 初めての起動の場合EPPROMにデフォルト設定を書き込む
     c = EEPROM.read(0); // 最初の0バイト目を読み込む
-    if (c != 0x39) {
-      EEPROM.write(0, 0x39); // 初期化したよを書き込む
+    if (c != 0x3A) {
+      EEPROM.write(0, 0x3A); // 初期化したよを書き込む
       EEPROM.put(1, nubst); // 初期値を書き込んでおく
     }
 
@@ -144,6 +146,8 @@ void setup() {
     actuation_mode_last = false;
     calibration_mode_last = false;
     get_cmd = -1;
+    actuation_status = 2;
+    calibration_status = 2;
     nub_x_min = 0; // キャリブレーション X 座標の最小値
     nub_x_max = 0; // キャリブレーション X 座標の最大値
     nub_y_min = 0; // キャリブレーション Y 座標の最小値
@@ -234,6 +238,18 @@ void requestEvent() {
     Wire.write(get_cmd);
 
   } else if (get_cmd == 0x43) {
+    // アクチュエーション設定モードの設定を更新
+    actuation_status = get_data[1];
+    // コマンドをエコー
+    Wire.write(get_cmd);
+
+  } else if (get_cmd == 0x44) {
+    // キャリブレーション設定モードの設定を更新
+    calibration_status = get_data[1];
+    // コマンドをエコー
+    Wire.write(get_cmd);
+
+  } else if (get_cmd == 0x45) {
     // アクチュエーションポイント設定を更新してEEPROMに保存
     c = nubst.key_actuation;
     nubst.key_actuation = (get_data[1] << 8) | get_data[2];
@@ -243,7 +259,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x44) {
+  } else if (get_cmd == 0x46) {
     // Nubkeyとしてマウス操作させるまでの時間を更新してEEPROMに保存
     c = nubst.nub_start_time;
     nubst.nub_start_time = (get_data[1] << 8) | get_data[2];
@@ -252,7 +268,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x45) {
+  } else if (get_cmd == 0x47) {
     // Nubkey 動かし始める高さを変更してEEPROMに保存
     c = nubst.nub_start_down;
     nubst.nub_start_down = (get_data[1] << 8) | get_data[2];
@@ -261,7 +277,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x46) {
+  } else if (get_cmd == 0x48) {
     // Nubkey マウス移動のスピードを更新してEEPROMに保存
     c = nubst.nub_speed_left;
     d = nubst.nub_speed_right;
@@ -279,7 +295,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x47) {
+  } else if (get_cmd == 0x49) {
     // Nubkey 読み込みサイクルのdelay値を変更してEEPROMに保存
     c = nubst.loop_delay;
     nubst.loop_delay = (get_data[1] << 8) | get_data[2];
@@ -288,7 +304,7 @@ void requestEvent() {
     // コマンドをエコー
     Wire.write(get_cmd);
 
-  } else if (get_cmd == 0x48) {
+  } else if (get_cmd == 0x4A) {
     // 設定をすべてリセット
     nubst_reset();
     // EEPROMに保存
@@ -354,10 +370,18 @@ void loop() {
   }
 
   // アクチュエーションポイント設定モードかピンの状態を取得
-  actuation_mode = (bool)!digitalRead(PIN_PB2);
+  if ((actuation_status == 2 && !digitalRead(PIN_PB2)) || actuation_status == 1) {
+    actuation_mode = true;
+  } else {
+    actuation_mode = false;
+  }
 
   // キャリブレーション設定モードかピンの状態を取得
-  calibration_mode = (bool)!digitalRead(PIN_PA3);
+  if ((calibration_status == 2 && !digitalRead(PIN_PA3)) || calibration_status == 1) {
+    calibration_mode = true;
+  } else {
+    calibration_mode = false;
+  }
 
   // Nubkey の値取得
   au = analogRead(PIN_PA6); // 上
@@ -443,7 +467,8 @@ void loop() {
           if (t > (unsigned long)nubst.nub_start_time) {
             mx = nub_x - nubst.rang_x; // キャリブレーションの位置を反映
             my = nub_y - nubst.rang_y; // キャリブレーションの位置を反映
-            p = (nubst.nub_start_down - nub_down); // 押し込み具合取得
+            p = (nubst.nub_start_down - nub_down) / 4; // 押し込み具合取得
+            // noInterrupts(); // 割り込み禁止 開始
             if (mx < 0) {
               res_data[0] = (int)(abs(mx) * p / nubst.nub_speed_left) & 0xFF;
             } else {
@@ -454,6 +479,7 @@ void loop() {
             } else {
               res_data[3] = (int)(abs(my) * p / nubst.nub_speed_down) & 0xFF;
             }
+            // interrupts(); // 割り込み禁止 解除
           }
         }
       } else if (key_down_last == 1) {
