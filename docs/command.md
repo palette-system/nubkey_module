@@ -5,8 +5,24 @@ nubkey_module は AZ1UBALL 同様にPIM447と同じ通信でQMKなどから使�
 
 <br><br>
 
+## デフォルトのレスポンスフォーマット　(PIM447互換)
+<br>
+|  内容  |  説明  |  サイズ(byte)  |
+|  --  |  --  |  --  |
+|  左  |  左方向への移動距離  |  1  |
+|  右  |  右方向への移動距離  |  1  |
+|  左  |  上方向への移動距離  |  1  |
+|  右  |  下方向への移動距離  |  1  |
+|  スイッチ  |  0x00 = ボタン OFF<br>0x80 = ボタン ON  |  1  |
+
+
+<br><br>
+
 
 ## QMK起動時にコマンドを実行する例
+<br>
+通常のレスポンスとは別にI2Cでコマンドを送信する事で細かい設定を行う事ができます。<br>
+<br>
 ```
 void pointing_device_init_kb(void) {
     // _delay_ms(100); // nubkey_module の起動よりもProMicroの起動のが早い場合用 nubkey_module の起動を待ってから設定コマンドを投げる
@@ -17,7 +33,7 @@ void pointing_device_init_kb(void) {
     // 送信するコマンド
     uint8_t cmd[]={0x48,   /* 左 */ 0x03, 0xE8,   /* 右 */ 0x03, 0xE8,   /* 上 */ 0x03, 0xE8,   /* 下 */ 0x03, 0xE8}; // マウス移動の速度 左右上下
     // uint8_t cmd[]={0x47, 0x01, 0x68}; // 高さ調節
-    // uint8_t cmd[]={0x48}; // 設定リセット
+    // uint8_t cmd[]={0x4A}; // 設定リセット
     // コマンドの送信
     status  = i2c_transmit(addr, cmd, sizeof(cmd), timeout);
     if (status != 0) return;

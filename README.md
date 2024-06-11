@@ -28,6 +28,12 @@ nubkey_module で実行できるI2Cのコマンドの仕様書です。QMK等か
 <br>
 <br>
 
+
+<a href="/hardware/nubkey_module_tester/">nubkey_module tester　KiCadデータ</a><br>
+nubkey_module tester のKiCadデータです。nubkey_module を使用したキーボードを作る際の参考にして下さい。<br>
+<br>
+<br>
+
 ## 基本的な接続
 <br>
 <img src="/images/haisen_1.png" width="700"><br>
