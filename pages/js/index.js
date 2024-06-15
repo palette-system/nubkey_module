@@ -135,7 +135,7 @@ async function flashFirmware() {
 async function loadFirmHex(src) {
   let p = new Promise(function(resolve, reject) {
     let xhr = new XMLHttpRequest();
-    xhr.responseType = "arraybuffer";
+    // xhr.responseType = "arraybuffer";
     xhr.open("GET", src, true);
     xhr.addEventListener("load", function(e) {
       console.log(xhr);
@@ -145,7 +145,7 @@ async function loadFirmHex(src) {
   });
   return p.then(function(response) {
     // firmHex = {"data": new Uint8Array(response)};
-    firmHex = ihex.parse(response);
+    firmHex = ihex.parse(Buffer.from(response));
     console.log(new Uint8Array(response));
     flashFirmware();
   });
