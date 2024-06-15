@@ -64,9 +64,9 @@ async function readFirmware() {
 }
 
 // 選択されたファイルを変数firmHexへ格納
-document
-   .getElementById("upload-file")
-   .addEventListener("change", fileUpload, false);
+// document
+//   .getElementById("upload-file")
+//   .addEventListener("change", fileUpload, false);
 function fileUpload() {
   console.log(this.files);
   firmHex = null;
@@ -131,11 +131,10 @@ async function flashFirmware() {
   }
 }
 
-// 指定したURLのファイルをダウンロードする
+// 指定したURLのファイルをダウンロードしてProMicroに書き込む
 async function loadFirmHex(src) {
   let p = new Promise(function(resolve, reject) {
     let xhr = new XMLHttpRequest();
-    // xhr.responseType = "arraybuffer";
     xhr.open("GET", src, true);
     xhr.addEventListener("load", function(e) {
       console.log(xhr);
@@ -144,9 +143,9 @@ async function loadFirmHex(src) {
     xhr.send();
   });
   return p.then(function(response) {
-    // firmHex = {"data": new Uint8Array(response)};
-    firmHex = ihex.parse(Buffer.from(response));
-    console.log(new Uint8Array(response));
+    let buf = Buffer.from(response);
+    console.log(buf);
+    firmHex = ihex.parse(buf);
     flashFirmware();
   });
 };
