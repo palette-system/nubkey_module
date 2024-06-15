@@ -131,9 +131,31 @@ async function flashFirmware() {
   }
 }
 
+// 指定したURLのファイルをダウンロードする
+async function loadFirmHex(src) {
+  let p = new Promise(function(resolve, reject) {
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "arraybuffer";
+    xhr.open("GET", src, true);
+    xhr.addEventListener("load", function(e) {
+      resolve(xhr.response);
+    });
+    xhr.send();
+  });
+  return p.then(function(response) {
+    firmHex = response;
+    console.log(response);
+    await flashFirmware();
+  });
+};
+
+function nubkey_module_tester_flash() {
+  loadFirmHex("./data/nubkey_module_tester.hex");
+}
+
 // document.getElementById("read").onclick = readFirmware;
 // document.getElementById("verify").onclick = verifyFirmware;
-document.getElementById("flash").onclick = flashFirmware;
+document.getElementById("flash").onclick = nubkey_module_tester_flash;
 // document.getElementById(
 //   "revision"
 // ).innerText = `Revision:${process.env.REVISION}`;
