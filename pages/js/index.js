@@ -21,6 +21,7 @@ function updateProgress(str) {
   console.log(str);
 }
 
+// シリアルが使えないブラウザならエラー表示
 if (!navigator.serial) {
   initProgress(
     "Web serial is unavailable.\nPlease use Google Chrome or Chromium Edge\n"
@@ -28,18 +29,19 @@ if (!navigator.serial) {
   console.error("Web serial is unavailable");
 }
 
-async function loadEepromHex() {
-  let eepromOption = document.getElementById("eeprom");
-  if (eepromOption.eeprom.value === "none") {
+// Hex のヘッダデータ取得
+// opt = "none" / "split-left" / "split-right" /
+async function loadEepromHex(opt) {
+  if (opt === "none") {
     return null;
-  } else if (eepromOption.eeprom.value === "split-left") {
-    let hex = await fetch("./eeprom-lefthand.eep").then((r) => {
+  } else if (opt === "split-left") {
+    let hex = await fetch("./data/eeprom-lefthand.eep").then((r) => {
       return r.text();
     });
     console.log(ihex.parse(hex));
     return new Uint8Array(ihex.parse(hex).data);
-  } else if (eepromOption.eeprom.value === "split-right") {
-    let hex = await fetch("./eeprom-righthand.eep").then((r) => {
+  } else if (opt === "split-right") {
+    let hex = await fetch("./data/eeprom-righthand.eep").then((r) => {
       return r.text();
     });
     console.log(ihex.parse(hex));
@@ -47,6 +49,7 @@ async function loadEepromHex() {
   }
 }
 
+// ProMicro 内のデータを binでダウンロード
 async function readFirmware() {
   initProgress("Reset Pro Micro and choose serial port appeared.");
   try {
@@ -60,9 +63,10 @@ async function readFirmware() {
   }
 }
 
+// 選択されたファイルを変数firmHexへ格納
 document
-  .getElementById("upload-file")
-  .addEventListener("change", fileUpload, false);
+   .getElementById("upload-file")
+   .addEventListener("change", fileUpload, false);
 function fileUpload() {
   console.log(this.files);
   firmHex = null;
@@ -107,6 +111,7 @@ async function verifyFirmware() {
   }
 }
 
+// ファームウェア書き込み
 async function flashFirmware() {
   if (firmHex == null) {
     initProgress("Please upload firmware at first.");
@@ -115,7 +120,8 @@ async function flashFirmware() {
     initProgress("Reset Pro Micro and choose serial port appeared.");
   }
 
-  let eep = await loadEepromHex();
+  // let eep = await loadEepromHex();
+  let eep = null; // いったん none 固定
 
   try {
     await bootloader.write(firmHex.data, eep, updateProgress);
@@ -125,9 +131,9 @@ async function flashFirmware() {
   }
 }
 
-document.getElementById("read").onclick = readFirmware;
-document.getElementById("verify").onclick = verifyFirmware;
+// document.getElementById("read").onclick = readFirmware;
+// document.getElementById("verify").onclick = verifyFirmware;
 document.getElementById("flash").onclick = flashFirmware;
-document.getElementById(
-  "revision"
-).innerText = `Revision:${process.env.REVISION}`;
+// document.getElementById(
+//   "revision"
+// ).innerText = `Revision:${process.env.REVISION}`;
