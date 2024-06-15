@@ -145,7 +145,7 @@ async function loadFirmHex(src) {
   return p.then(function(response) {
     firmHex = response;
     console.log(response);
-    await flashFirmware();
+    flashFirmware();
   });
 };
 
