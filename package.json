@@ -1,0 +1,29 @@
+{
+  "name": "nubkey_module_tester_uploader",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "palette-system",
+  "license": "MIT",
+  "browserslist": [
+    "since 2017-06"
+  ],
+  "scripts": {
+    "build": "parcel build index.html .",
+    "start": "parcel start index.html --https",
+    "fmt": "prettier --write package.json src/*.js src/*.ts *.html"
+  },
+  "devDependencies": {
+    "eslint": "^7.20.0",
+    "eslint-config-prettier": "^8.0.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "intel-hex": "^0.1.2",
+    "parcel": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.5.1",
+    "prettier": "^2.2.1",
+    "typescript": "^4.1.5"
+  },
+  "staticFiles": {
+    "staticPath": "static",
+    "watcherGlob": "**"
+  }
+}
