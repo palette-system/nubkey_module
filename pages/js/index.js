@@ -138,12 +138,13 @@ async function loadFirmHex(src) {
     xhr.responseType = "arraybuffer";
     xhr.open("GET", src, true);
     xhr.addEventListener("load", function(e) {
+      console.log(xhr);
       resolve(xhr.response);
     });
     xhr.send();
   });
   return p.then(function(response) {
-    firmHex = response;
+    firmHex = {"data": response};
     console.log(response);
     flashFirmware();
   });
