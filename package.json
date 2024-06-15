@@ -8,8 +8,8 @@
     "since 2017-06"
   ],
   "scripts": {
-    "build": "parcel build index.html .",
-    "start": "parcel start index.html --https",
+    "build": "parcel build ./pages/index.html .",
+    "start": "parcel start ./pages/index.html --https",
     "fmt": "prettier --write package.json src/*.js src/*.ts *.html"
   },
   "devDependencies": {
