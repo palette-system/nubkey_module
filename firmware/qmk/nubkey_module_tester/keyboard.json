@@ -1,0 +1,33 @@
+{                                                                                                                                     
+    "manufacturer": "PaletteSystem",
+    "keyboard_name": "nubkey_module",
+    "maintainer": "unbosoms",
+    "bootloader": "caterina",
+    "diode_direction": "COL2ROW",
+    "features": {
+        "bootmagic": true,
+        "command": false,
+        "console": false,
+        "extrakey": true,
+        "mousekey": true,
+        "nkro": true
+    },
+    "matrix_pins": {
+        "cols": ["B5"],
+        "rows": ["E6"]
+    },
+    "processor": "atmega32u4",
+    "url": "",
+    "usb": {
+        "device_version": "1.0.0",    
+        "pid": "0x5953",
+        "vid": "0xFEED"
+    }, 
+    "layouts": {
+        "LAYOUT_ortho_1x1": {
+            "layout": [
+                {"matrix": [0, 0], "label": "Mouse Left Click", "x": 0, "y": 0}
+            ]
+        }
+    }
+}

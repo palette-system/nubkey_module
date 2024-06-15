@@ -113,6 +113,7 @@ async function verifyFirmware() {
 
 // ファームウェア書き込み
 async function flashFirmware() {
+  console.log(firmHex);
   if (firmHex == null) {
     initProgress("Please upload firmware at first.");
     return;
