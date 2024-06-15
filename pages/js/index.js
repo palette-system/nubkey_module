@@ -144,8 +144,8 @@ async function loadFirmHex(src) {
     xhr.send();
   });
   return p.then(function(response) {
-    firmHex = {"data": response};
-    console.log(response);
+    firmHex = {"data": new Uint8Array(response)};
+    console.log(new Uint8Array(response));
     flashFirmware();
   });
 };
