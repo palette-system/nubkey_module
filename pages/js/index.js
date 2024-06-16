@@ -152,7 +152,7 @@ async function loadFirmHex(src) {
 };
 
 function nubkey_module_tester_flash() {
-  loadFirmHex("./data/nubkey_module_tester.hex");
+  loadFirmHex("./data/nubkey_module_tester_default.hex");
 }
 
 // document.getElementById("read").onclick = readFirmware;
