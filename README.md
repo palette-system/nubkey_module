@@ -23,6 +23,10 @@ nubkey_module をPCBにはんだ付けする際にご確認下さい。<br>
 nubkey_module tester を組み立てる際にご確認下さい。<br>
 <br>
 
+<a href="https://palette-system.github.io/nubkey_module/">nubkey_module tester　ファームウェア書き込み</a><br>
+nubkey_module tester を使用する際にご確認下さい。<br>
+<br>
+
 <a href="/docs/command.md">nubkey_module　通信仕様</a><br>
 nubkey_module で実行できるI2Cのコマンドの仕様書です。QMK等から速度調節する場合等にご確認下さい。<br>
 <br>
