@@ -30,8 +30,6 @@ nubkey_module tester を使用する際にご確認下さい。<br>
 <a href="/docs/command.md">nubkey_module　通信仕様</a><br>
 nubkey_module で実行できるI2Cのコマンドの仕様書です。QMK等から速度調節する場合等にご確認下さい。<br>
 <br>
-<br>
-
 
 <a href="/hardware/nubkey_module_tester/">nubkey_module tester　KiCadデータ</a><br>
 nubkey_module tester のKiCadデータです。nubkey_module を使用したキーボードを作る際の参考にして下さい。<br>
@@ -41,6 +39,11 @@ nubkey_module tester のKiCadデータです。nubkey_module を使用したキ�
 ## 基本的な接続
 <br>
 <img src="/images/haisen_1.png" width="700"><br>
+<br>
+
+## キャリブレーション
+どんなに気を付けて作成しても組み立て毎に磁気スイッチの中心位置が0.数ミリズレが生じます。<br>
+キャリブレーションスイッチを押したまま、Nubkeyを押下して上下左右にグリグリ動かす事で nubkey_module のソフト側で中心位置を調節できます。<br>
 <br>
 
 ## オススメの構造
